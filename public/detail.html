@@ -444,7 +444,9 @@
     <script type="module" src="js/components/toast-msg.js"></script>
     <script type="module" src="js/components/upload-modal.js"></script>
     
-    <script>
+    <script type="module">
+        import { apiRequest, buildApiUrl } from './js/config.js';
+        
         let currentRestaurant = null;
         let currentDishes = [];
         
@@ -461,8 +463,7 @@
         
         async function loadRestaurantDetail(id) {
             try {
-                const response = await fetch(`/api/api.php?action=restDetail&rest=${id}`);
-                const result = await response.json();
+                const result = await apiRequest(`/api/api.php?action=restDetail&rest=${id}`);
                 
                 if (result.ok) {
                     currentRestaurant = result.data.restaurant;
@@ -625,14 +626,25 @@
         }
         
         function openUploadModal() {
-            if (!window.selectedDish) {
-                ToastMsg.warning('请先选择一个菜品');
-                return;
-            }
-            
             const uploadModal = document.querySelector('upload-modal');
-            if (uploadModal) {
-                uploadModal.open(window.selectedDish.id);
+            if (uploadModal && currentRestaurant) {
+                // If no dish is selected, use the first dish or create a default one
+                if (!window.selectedDish && currentDishes.length > 0) {
+                    window.selectedDish = currentDishes[0];
+                } else if (!window.selectedDish) {
+                    // Create a default dish object for restaurants without dishes
+                    window.selectedDish = {
+                        id: currentRestaurant.id,
+                        name: currentRestaurant.name,
+                        price: currentRestaurant.avg_price || 0
+                    };
+                }
+                
+                // Use the selected dish ID or restaurant ID
+                const dishId = window.selectedDish.id || currentRestaurant.id;
+                uploadModal.open(dishId);
+            } else {
+                ToastMsg.error('餐厅信息加载中，请稍后再试');
             }
         }
         
@@ -692,6 +704,18 @@
                 loadRestaurantDetail(restaurantId);
             }
         });
+        
+        // Global functions for onclick handlers
+        window.goBack = function() {
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/public/';
+            }
+        };
+        
+        // Make openUploadModal globally available
+        window.openUploadModal = openUploadModal;
     </script>
 </body>
 </html>

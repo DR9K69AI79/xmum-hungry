@@ -279,9 +279,11 @@ class FilterSheet extends HTMLElement {
             chip.addEventListener('click', () => this.toggleCuisine(chip));
         });
 
-        // Rating stars
-        this.querySelectorAll('.rating-star').forEach(star => {
-            star.addEventListener('click', () => this.setRating(parseInt(star.dataset.rating)));
+        // Rating stars - use event delegation
+        this.addEventListener('click', (e) => {
+            if (e.target.classList.contains('rating-star')) {
+                this.setRating(parseInt(e.target.dataset.rating));
+            }
         });
 
         // Price range slider
@@ -336,9 +338,18 @@ class FilterSheet extends HTMLElement {
 
     setRating(rating) {
         this.filters.rating = rating;
+        
+        // Update star colors
         this.querySelectorAll('.rating-star').forEach((star, index) => {
-            star.style.color = index < rating ? '#ffc107' : '#dee2e6';
+            const starRating = parseInt(star.dataset.rating);
+            star.style.color = starRating <= rating ? '#ffc107' : '#dee2e6';
         });
+        
+        // Update rating display text if exists
+        const ratingText = this.querySelector('#ratingText');
+        if (ratingText) {
+            ratingText.textContent = rating > 0 ? `${rating}星及以上` : '不限星级';
+        }
     }
 
     async parseNaturalLanguage() {

@@ -1,4 +1,7 @@
 // Main JavaScript file for XMUM Hungry
+// Import API configuration
+import { apiRequest, buildApiUrl } from './config.js';
+
 // Import all Web Components
 import './components/map-container.js';
 import './components/fab-recommend.js';
@@ -59,8 +62,7 @@ async function initializeApp() {
 
 async function checkAuth() {
     try {
-        const response = await fetch('/api/api.php?action=checkAuth');
-        const result = await response.json();
+        const result = await apiRequest('/api/api.php?action=checkAuth');
         
         if (!result.ok) {
             // Redirect to login if not authenticated
@@ -174,8 +176,7 @@ function initializeComponents() {
 async function loadInitialData() {
     try {
         // Load restaurants for initial display
-        const response = await fetch('/api/api.php?action=getAllRestaurants');
-        const result = await response.json();
+        const result = await apiRequest('/api/api.php?action=getAllRestaurants');
         
         if (result.ok && result.restaurants) {
             state.currentRestaurants = result.restaurants;
@@ -207,8 +208,7 @@ async function handleRecommendClick(sortMode) {
             limit: 3
         });
         
-        const response = await fetch(`/api/api.php?action=random3&${params}`);
-        const result = await response.json();
+        const result = await apiRequest(`/api/api.php?action=random3&${params}`);
         
         if (result.ok && result.restaurants) {
             // Update map with recommended restaurants
@@ -238,8 +238,7 @@ async function applyFilters() {
     
     try {
         const params = new URLSearchParams(state.currentFilters);
-        const response = await fetch(`/api/api.php?action=filterRestaurants&${params}`);
-        const result = await response.json();
+        const result = await apiRequest(`/api/api.php?action=filterRestaurants&${params}`);
         
         if (result.ok && result.restaurants) {
             // Update map with filtered restaurants

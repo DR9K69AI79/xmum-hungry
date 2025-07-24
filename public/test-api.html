@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - XMUM Hungry</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔧 XMUM Hungry - API 测试页面</h1>
+    
+    <div class="test-section">
+        <h2>🌐 服务器连接测试</h2>
+        <button onclick="testConnection()">测试连接</button>
+        <div id="connection-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🔐 认证系统测试</h2>
+        <button onclick="testCheckAuth()">检查认证状态</button>
+        <button onclick="testLogin()">测试登录</button>
+        <button onclick="testLogout()">测试登出</button>
+        <div id="auth-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>🍽️ 餐厅数据测试</h2>
+        <button onclick="testGetRestaurants()">获取餐厅列表</button>
+        <button onclick="testGetRandom3()">获取推荐餐厅</button>
+        <div id="restaurant-result"></div>
+    </div>
+
+    <script type="module">
+        import { apiRequest } from './js/config.js';
+        
+        window.testConnection = async function() {
+            const resultDiv = document.getElementById('connection-result');
+            try {
+                const response = await fetch(window.location.origin + '/api/api.php');
+                if (response.ok) {
+                    resultDiv.innerHTML = '<div class="success">✅ 服务器连接正常</div>';
+                } else {
+                    resultDiv.innerHTML = '<div class="error">❌ 服务器连接失败: ' + response.status + '</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">❌ 连接错误: ' + error.message + '</div>';
+            }
+        };
+        
+        window.testCheckAuth = async function() {
+            const resultDiv = document.getElementById('auth-result');
+            try {
+                const result = await apiRequest('/api/api.php?action=checkAuth');
+                resultDiv.innerHTML = '<div class="' + (result.ok ? 'success' : 'error') + '">' +
+                    (result.ok ? '✅ 用户已认证' : '❌ 用户未认证: ' + result.error) + 
+                    '</div><pre>' + JSON.stringify(result, null, 2) + '</pre>';
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">❌ 认证检查失败: ' + error.message + '</div>';
+            }
+        };
+        
+        window.testLogin = async function() {
+            const resultDiv = document.getElementById('auth-result');
+            try {
+                const result = await apiRequest('/api/api.php?action=login', {
+                    method: 'POST',
+                    body: 'email=demo@xmum.edu.my&pwd=demo123'
+                });
+                resultDiv.innerHTML = '<div class="' + (result.ok ? 'success' : 'error') + '">' +
+                    (result.ok ? '✅ 登录成功' : '❌ 登录失败: ' + result.error) + 
+                    '</div><pre>' + JSON.stringify(result, null, 2) + '</pre>';
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">❌ 登录测试失败: ' + error.message + '</div>';
+            }
+        };
+        
+        window.testLogout = async function() {
+            const resultDiv = document.getElementById('auth-result');
+            try {
+                const result = await apiRequest('/api/api.php?action=logout', {
+                    method: 'POST'
+                });
+                resultDiv.innerHTML = '<div class="success">✅ 登出完成</div><pre>' + JSON.stringify(result, null, 2) + '</pre>';
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">❌ 登出测试失败: ' + error.message + '</div>';
+            }
+        };
+        
+        window.testGetRestaurants = async function() {
+            const resultDiv = document.getElementById('restaurant-result');
+            try {
+                const result = await apiRequest('/api/api.php?action=getAllRestaurants');
+                resultDiv.innerHTML = '<div class="' + (result.ok ? 'success' : 'error') + '">' +
+                    (result.ok ? '✅ 获取到 ' + result.restaurants.length + ' 家餐厅' : '❌ 获取餐厅失败: ' + result.error) + 
+                    '</div><pre>' + JSON.stringify(result, null, 2) + '</pre>';
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">❌ 餐厅数据测试失败: ' + error.message + '</div>';
+            }
+        };
+        
+        window.testGetRandom3 = async function() {
+            const resultDiv = document.getElementById('restaurant-result');
+            try {
+                const result = await apiRequest('/api/api.php?action=random3&limit=3');
+                resultDiv.innerHTML = '<div class="' + (result.ok ? 'success' : 'error') + '">' +
+                    (result.ok ? '✅ 获取到 ' + result.restaurants.length + ' 家推荐餐厅' : '❌ 获取推荐失败: ' + result.error) + 
+                    '</div><pre>' + JSON.stringify(result, null, 2) + '</pre>';
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="error">❌ 推荐测试失败: ' + error.message + '</div>';
+            }
+        };
+    </script>
+</body>
+</html>

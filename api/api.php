@@ -3,7 +3,7 @@ require_once '../config/config.php';
 require_once 'helpers.php';
 
 // Handle the request
-$action = $_GET['action'] ?? '';
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 switch ($action) {
     case 'signup':
@@ -81,7 +81,7 @@ switch ($action) {
         
     case 'getRecentActivities':
         requireAdmin();
-        getRecentActivities();
+        handleGetRecentActivities();
         break;
         
     case 'getAllUsers':
@@ -267,7 +267,7 @@ function handleFilterRestaurants() {
     $stmt->execute($params);
     $restaurants = $stmt->fetchAll();
     
-    respond(['ok' => true, 'message' => 'Filtered restaurants retrieved', 'data' => ['restaurants' => $restaurants]]);
+    respond(['ok' => true, 'message' => 'Filtered restaurants retrieved', 'restaurants' => $restaurants]);
 }
 
 function handleRestaurantDetail() {
@@ -745,12 +745,12 @@ function handleRandom3() {
         }
         
         if ($minPrice > 0) {
-            $sql .= " AND r.price >= ?";
+            $sql .= " AND r.avg_price >= ?";
             $params[] = $minPrice;
         }
         
         if ($maxPrice < 100) {
-            $sql .= " AND r.price <= ?";
+            $sql .= " AND r.avg_price <= ?";
             $params[] = $maxPrice;
         }
         
@@ -793,7 +793,7 @@ function handleRandom3() {
             $restaurant['rating'] = round(floatval($restaurant['avg_rating']), 1);
             $restaurant['lat'] = floatval($restaurant['lat']);
             $restaurant['lng'] = floatval($restaurant['lng']);
-            $restaurant['price'] = floatval($restaurant['price']);
+            $restaurant['price'] = floatval($restaurant['avg_price'] ?? 0);
             unset($restaurant['avg_rating']);
         }
         

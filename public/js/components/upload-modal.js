@@ -1,4 +1,6 @@
 // Upload Modal Web Component
+import { apiRequest, buildApiUrl } from '../config.js';
+
 class UploadModal extends HTMLElement {
     constructor() {
         super();
@@ -559,12 +561,10 @@ class UploadModal extends HTMLElement {
                 formData.append('audio', this.recordedAudio, 'review.webm');
             }
 
-            const response = await fetch('/api/api.php?action=addReview', {
+            const result = await apiRequest('/api/api.php?action=addReview', {
                 method: 'POST',
                 body: formData
             });
-
-            const result = await response.json();
 
             if (result.ok) {
                 this.showToast('评价提交成功！', 'success');

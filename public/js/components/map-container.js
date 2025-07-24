@@ -5,6 +5,7 @@ class MapContainer extends HTMLElement {
         this.map = null;
         this.markers = [];
         this.userLocation = null;
+        this.isInteracting = false; // Flag to prevent clearing during user interaction
     }
 
     connectedCallback() {
@@ -112,24 +113,46 @@ class MapContainer extends HTMLElement {
         }).addTo(this.map);
     }
 
+    areRestaurantsSame(newRestaurants) {
+        if (!this.currentRestaurants || !newRestaurants) {
+            return false;
+        }
+        
+        if (this.currentRestaurants.length !== newRestaurants.length) {
+            return false;
+        }
+        
+        return this.currentRestaurants.every((restaurant, index) => 
+            restaurant.id === newRestaurants[index].id
+        );
+    }
+
     setRestaurants(restaurants) {
-        // Clear existing markers
-        this.clearMarkers();
+        // Check if restaurants are different before clearing
+        if (!this.areRestaurantsSame(restaurants)) {
+            this.clearMarkers();
+        }
 
         if (!restaurants || restaurants.length === 0) {
+            this.currentRestaurants = [];
             return;
         }
 
-        // Add new markers
-        restaurants.forEach((restaurant, index) => {
-            const marker = this.createRestaurantMarker(restaurant, index);
-            this.markers.push(marker);
-        });
+        // Save current restaurants for comparison
+        this.currentRestaurants = restaurants;
 
-        // Fit map to show all markers
-        if (this.markers.length > 0) {
-            const group = new L.featureGroup(this.markers);
-            this.map.fitBounds(group.getBounds().pad(0.1));
+        // Only add markers if they don't already exist
+        if (this.markers.length === 0) {
+            restaurants.forEach((restaurant, index) => {
+                const marker = this.createRestaurantMarker(restaurant, index);
+                this.markers.push(marker);
+            });
+
+            // Fit map to show all markers
+            if (this.markers.length > 0) {
+                const group = new L.featureGroup(this.markers);
+                this.map.fitBounds(group.getBounds().pad(0.1));
+            }
         }
 
         // Show first restaurant in mini card
