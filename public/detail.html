@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>餐厅详情 - XMUM Hungry</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    
+    <style>
+        body {
+            font-family: var(--font-family-base);
+            background: var(--bg-secondary);
+        }
+        
+        .header-bar {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .back-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 50%;
+            transition: var(--transition-base);
+        }
+        
+        .back-btn:hover {
+            background: var(--bg-secondary);
+        }
+        
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .restaurant-banner {
+            height: 200px;
+            background: linear-gradient(135deg, var(--xmum-blue), var(--xmum-red));
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .restaurant-banner img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .restaurant-banner video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .banner-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.7));
+            color: white;
+            padding: 20px;
+        }
+        
+        .restaurant-info {
+            background: var(--bg-primary);
+            margin: -20px 20px 20px;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--box-shadow);
+            position: relative;
+            z-index: 10;
+        }
+        
+        .restaurant-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .restaurant-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .rating-stars {
+            color: #ffc107;
+        }
+        
+        .cuisines {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        
+        .cuisine-tag {
+            background: var(--xmum-red);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .section {
+            background: var(--bg-primary);
+            margin: 0 20px 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .section-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+        
+        .dishes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 20px;
+        }
+        
+        .dish-card {
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: var(--transition-base);
+            cursor: pointer;
+        }
+        
+        .dish-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--box-shadow-lg);
+        }
+        
+        .dish-image {
+            height: 120px;
+            background: var(--bg-secondary);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dish-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .dish-image video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .dish-image-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            color: var(--text-secondary);
+        }
+        
+        .dish-info {
+            padding: 16px;
+        }
+        
+        .dish-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        
+        .dish-price {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--xmum-red);
+            margin-bottom: 8px;
+        }
+        
+        .dish-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+        
+        .reviews-list {
+            padding: 0;
+        }
+        
+        .review-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .review-item:last-child {
+            border-bottom: none;
+        }
+        
+        .review-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .review-user {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+        
+        .review-rating {
+            color: #ffc107;
+            font-size: 14px;
+        }
+        
+        .review-content {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+        
+        .review-media {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .review-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+        
+        .review-audio {
+            max-width: 200px;
+        }
+        
+        .fab-upload {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--xmum-red);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: var(--transition-base);
+            z-index: 1000;
+        }
+        
+        .fab-upload:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        @media (max-width: 576px) {
+            .header-bar {
+                padding: 8px 16px;
+            }
+            
+            .restaurant-info {
+                margin: -20px 16px 16px;
+                padding: 16px;
+            }
+            
+            .section {
+                margin: 0 16px 16px;
+            }
+            
+            .dishes-grid {
+                grid-template-columns: 1fr;
+                padding: 16px;
+                gap: 12px;
+            }
+            
+            .restaurant-meta {
+                gap: 12px;
+            }
+            
+            .fab-upload {
+                bottom: 16px;
+                right: 16px;
+                width: 48px;
+                height: 48px;
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header-bar">
+        <button class="back-btn" onclick="goBack()">←</button>
+        <h1 class="header-title">餐厅详情</h1>
+    </div>
+    
+    <!-- Restaurant Banner -->
+    <div class="restaurant-banner" id="restaurantBanner">
+        <img id="bannerImage" style="display: none;">
+        <video id="bannerVideo" style="display: none;" controls muted loop>
+            <source id="bannerVideoSource" type="video/mp4">
+            您的浏览器不支持视频播放。
+        </video>
+        <div class="banner-overlay">
+            <div class="d-flex align-items-center gap-2">
+                <span style="font-size: 32px;">🍽️</span>
+                <div>
+                    <h2 id="bannerTitle" style="margin: 0; font-size: 20px;">加载中...</h2>
+                    <p id="bannerSubtitle" style="margin: 0; opacity: 0.8; font-size: 14px;">正在获取餐厅信息</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Restaurant Info -->
+    <div class="restaurant-info">
+        <h1 class="restaurant-name" id="restaurantName">加载中...</h1>
+        
+        <div class="restaurant-meta">
+            <div class="meta-item">
+                <span class="rating-stars">⭐</span>
+                <span id="restaurantRating">-</span>
+            </div>
+            <div class="meta-item">
+                <span>📍</span>
+                <span id="restaurantDistance">-</span>
+            </div>
+            <div class="meta-item">
+                <span>💰</span>
+                <span id="restaurantPrice">-</span>
+            </div>
+        </div>
+        
+        <div class="cuisines" id="restaurantCuisines">
+            <!-- Cuisine tags will be inserted here -->
+        </div>
+        
+        <p id="restaurantDescription" class="text-muted">
+            正在加载餐厅描述...
+        </p>
+    </div>
+    
+    <!-- Dishes Section -->
+    <div class="section">
+        <div class="section-header">
+            <h3 class="section-title">菜品推荐</h3>
+            <span class="badge bg-secondary" id="dishCount">0</span>
+        </div>
+        <div class="dishes-grid" id="dishesGrid">
+            <!-- Dishes will be inserted here -->
+        </div>
+    </div>
+    
+    <!-- Reviews Section -->
+    <div class="section">
+        <div class="section-header">
+            <h3 class="section-title">用户评价</h3>
+            <span class="badge bg-secondary" id="reviewCount">0</span>
+        </div>
+        <div class="reviews-list" id="reviewsList">
+            <!-- Reviews will be inserted here -->
+        </div>
+    </div>
+    
+    <!-- Upload FAB -->
+    <button class="fab-upload" onclick="openUploadModal()" title="添加评价">
+        ➕
+    </button>
+    
+    <!-- Upload Modal -->
+    <upload-modal></upload-modal>
+    
+    <!-- Toast Messages -->
+    <toast-msg></toast-msg>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="js/components/toast-msg.js"></script>
+    <script type="module" src="js/components/upload-modal.js"></script>
+    
+    <script>
+        let currentRestaurant = null;
+        let currentDishes = [];
+        
+        // Get restaurant ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const restaurantId = urlParams.get('id');
+        
+        if (!restaurantId) {
+            ToastMsg.error('餐厅ID不能为空');
+            setTimeout(() => goBack(), 2000);
+        } else {
+            loadRestaurantDetail(restaurantId);
+        }
+        
+        async function loadRestaurantDetail(id) {
+            try {
+                const response = await fetch(`/api/api.php?action=restDetail&rest=${id}`);
+                const result = await response.json();
+                
+                if (result.ok) {
+                    currentRestaurant = result.data.restaurant;
+                    currentDishes = result.data.dishes;
+                    
+                    updateRestaurantInfo(result.data.restaurant);
+                    updateDishes(result.data.dishes);
+                    updateReviews(result.data.reviews);
+                } else {
+                    throw new Error(result.error || '加载失败');
+                }
+            } catch (error) {
+                console.error('Load restaurant detail error:', error);
+                ToastMsg.error('加载餐厅详情失败: ' + error.message);
+            }
+        }
+        
+        function updateRestaurantInfo(restaurant) {
+            // Update banner
+            document.getElementById('bannerTitle').textContent = restaurant.name;
+            document.getElementById('bannerSubtitle').textContent = restaurant.description || '美味餐厅';
+            
+            const bannerImg = document.getElementById('bannerImage');
+            const bannerVideo = document.getElementById('bannerVideo');
+            const bannerVideoSource = document.getElementById('bannerVideoSource');
+            
+            // Hide both initially
+            bannerImg.style.display = 'none';
+            bannerVideo.style.display = 'none';
+            
+            if (restaurant.video_url) {
+                // Show video if available
+                bannerVideoSource.src = `/uploads/videos/${restaurant.video_url}`;
+                bannerVideo.style.display = 'block';
+                bannerVideo.load(); // Reload video element
+            } else if (restaurant.photo_url) {
+                // Show image if no video but image available
+                bannerImg.src = `/uploads/${restaurant.photo_url}`;
+                bannerImg.style.display = 'block';
+            }
+            
+            // Update info section
+            document.getElementById('restaurantName').textContent = restaurant.name;
+            document.getElementById('restaurantRating').textContent = (restaurant.rating || 4.5).toFixed(1);
+            document.getElementById('restaurantDistance').textContent = (restaurant.distance || 0.5).toFixed(1) + 'km';
+            document.getElementById('restaurantPrice').textContent = `RM ${restaurant.avg_price || 10}`;
+            document.getElementById('restaurantDescription').textContent = restaurant.description || '这家餐厅提供美味的食物和优质的服务。';
+            
+            // Update cuisines
+            const cuisinesContainer = document.getElementById('restaurantCuisines');
+            cuisinesContainer.innerHTML = '';
+            
+            if (restaurant.cuisines) {
+                const cuisines = restaurant.cuisines.split(',');
+                cuisines.forEach(cuisine => {
+                    const tag = document.createElement('span');
+                    tag.className = 'cuisine-tag';
+                    tag.textContent = cuisine.trim();
+                    cuisinesContainer.appendChild(tag);
+                });
+            }
+        }
+        
+        function updateDishes(dishes) {
+            const dishesGrid = document.getElementById('dishesGrid');
+            const dishCount = document.getElementById('dishCount');
+            
+            dishCount.textContent = dishes.length;
+            
+            if (dishes.length === 0) {
+                dishesGrid.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">🍽️</div>
+                        <p>暂无菜品信息</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            dishesGrid.innerHTML = dishes.map(dish => {
+                let mediaContent = '';
+                if (dish.video_url) {
+                    mediaContent = `
+                        <video controls muted loop>
+                            <source src="/uploads/videos/${dish.video_url}" type="video/mp4">
+                            您的浏览器不支持视频播放。
+                        </video>
+                    `;
+                } else if (dish.photo_url) {
+                    mediaContent = `<img src="/uploads/${dish.photo_url}" alt="${dish.name}">`;
+                } else {
+                    mediaContent = `<div class="dish-image-placeholder">🍽️</div>`;
+                }
+                
+                return `
+                    <div class="dish-card" onclick="selectDish(${dish.id})">
+                        <div class="dish-image">
+                            ${mediaContent}
+                        </div>
+                        <div class="dish-info">
+                            <div class="dish-name">${dish.name}</div>
+                            <div class="dish-price">RM ${dish.price}</div>
+                            <div class="dish-description">${dish.description || '美味可口'}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function updateReviews(reviews) {
+            const reviewsList = document.getElementById('reviewsList');
+            const reviewCount = document.getElementById('reviewCount');
+            
+            reviewCount.textContent = reviews.length;
+            
+            if (reviews.length === 0) {
+                reviewsList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">💬</div>
+                        <p>暂无用户评价</p>
+                        <small>成为第一个评价的用户吧！</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            reviewsList.innerHTML = reviews.map(review => `
+                <div class="review-item">
+                    <div class="review-header">
+                        <div class="review-user">${review.user_email.split('@')[0]}</div>
+                        <div class="review-rating">${'⭐'.repeat(review.stars)}</div>
+                    </div>
+                    <div class="review-content">${review.comment || ''}</div>
+                    <div class="review-media">
+                        ${review.photo_url ? 
+                            `<img src="/uploads/${review.photo_url}" alt="评价图片" class="review-image" onclick="showImageModal('/uploads/${review.photo_url}')">` : 
+                            ''
+                        }
+                        ${review.audio_url ? 
+                            `<audio controls class="review-audio">
+                                <source src="/uploads/${review.audio_url}" type="audio/webm">
+                                <source src="/uploads/${review.audio_url}" type="audio/wav">
+                                您的浏览器不支持音频播放。
+                            </audio>` : 
+                            ''
+                        }
+                    </div>
+                    <small class="text-muted">${new Date(review.ts).toLocaleString('zh-CN')}</small>
+                </div>
+            `).join('');
+        }
+        
+        function selectDish(dishId) {
+            const selectedDish = currentDishes.find(dish => dish.id === dishId);
+            if (selectedDish) {
+                // Store selected dish for upload modal
+                window.selectedDish = selectedDish;
+                ToastMsg.info(`已选择菜品: ${selectedDish.name}`);
+            }
+        }
+        
+        function openUploadModal() {
+            if (!window.selectedDish) {
+                ToastMsg.warning('请先选择一个菜品');
+                return;
+            }
+            
+            const uploadModal = document.querySelector('upload-modal');
+            if (uploadModal) {
+                uploadModal.open(window.selectedDish.id);
+            }
+        }
+        
+        function showImageModal(imageSrc) {
+            // Create a simple image modal
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 2000;
+                cursor: pointer;
+            `;
+            
+            const img = document.createElement('img');
+            img.src = imageSrc;
+            img.style.cssText = `
+                max-width: 90%;
+                max-height: 90%;
+                border-radius: 8px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            `;
+            
+            modal.appendChild(img);
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', () => {
+                document.body.removeChild(modal);
+            });
+        }
+        
+        function goBack() {
+            if (document.referrer && document.referrer.includes(window.location.origin)) {
+                history.back();
+            } else {
+                window.location.href = 'index.html';
+            }
+        }
+        
+        // Listen for review added event
+        document.addEventListener('review-added', () => {
+            // Reload restaurant detail to show new review
+            loadRestaurantDetail(restaurantId);
+            ToastMsg.success('评价添加成功！');
+        });
+        
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                // Refresh data when page becomes visible
+                loadRestaurantDetail(restaurantId);
+            }
+        });
+    </script>
+</body>
+</html>
+

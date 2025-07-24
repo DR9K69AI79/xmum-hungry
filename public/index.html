@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XMUM Hungry - 校园美食推荐</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin="" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family-base);
+            overflow: hidden;
+        }
+        
+        .app-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        
+        .loading-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--xmum-red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        /* Header bar */
+        .header-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            z-index: 1010;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            color: var(--xmum-red);
+            text-decoration: none;
+        }
+        
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--xmum-red);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .logout-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: var(--transition-base);
+        }
+        
+        .logout-btn:hover {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+        
+        /* Map container adjustments */
+        map-container {
+            display: block;
+            width: 100%;
+            height: 100vh;
+            padding-top: 60px; /* Account for header */
+        }
+        
+        /* Mobile adjustments */
+        @media (max-width: 576px) {
+            .header-bar {
+                padding: 8px 16px;
+            }
+            
+            .header-logo {
+                font-size: 14px;
+            }
+            
+            .user-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 12px;
+            }
+            
+            map-container {
+                padding-top: 50px;
+            }
+        }
+        
+        /* Accessibility improvements */
+        @media (prefers-reduced-motion: reduce) {
+            .loading-spinner {
+                animation: none;
+            }
+            
+            * {
+                transition: none !important;
+                animation: none !important;
+            }
+        }
+        
+        /* High contrast mode */
+        @media (prefers-contrast: high) {
+            .header-bar {
+                background: white;
+                border-bottom: 2px solid black;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">正在加载 XMUM Hungry...</div>
+    </div>
+    
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- Header Bar -->
+        <div class="header-bar">
+            <a href="index.html" class="header-logo">
+                <span>🍽️</span>
+                <span>XMUM Hungry</span>
+            </a>
+            
+            <div class="header-user">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <button class="logout-btn" onclick="logout()" title="退出登录">
+                    <span>🚪</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Map Container -->
+        <map-container></map-container>
+        
+        <!-- FAB Buttons -->
+        <fab-recommend></fab-recommend>
+        <fab-filter></fab-filter>
+        
+        <!-- Filter Sheet -->
+        <filter-sheet></filter-sheet>
+        
+        <!-- Mini Card -->
+        <mini-card></mini-card>
+        
+        <!-- Toast Messages -->
+        <toast-msg></toast-msg>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+            crossorigin=""></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Main App Script -->
+    <script type="module" src="js/main.js"></script>
+    
+    <script>
+        // Global functions
+        async function logout() {
+            try {
+                const response = await fetch('/api/api.php?action=logout', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    window.location.href = 'login.html';
+                } else {
+                    console.error('Logout failed:', result.error);
+                    // Force redirect anyway
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('Logout error:', error);
+                // Force redirect on error
+                window.location.href = 'login.html';
+            }
+        }
+        
+        // Initialize user info
+        async function initUserInfo() {
+            try {
+                const response = await fetch('/api/api.php?action=getUserInfo');
+                const result = await response.json();
+                
+                if (result.ok && result.user) {
+                    const userAvatar = document.getElementById('userAvatar');
+                    const email = result.user.email || 'User';
+                    const initial = email.charAt(0).toUpperCase();
+                    userAvatar.textContent = initial;
+                    userAvatar.title = email;
+                }
+            } catch (error) {
+                console.error('Failed to load user info:', error);
+            }
+        }
+        
+        // Hide loading overlay when page is loaded
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.classList.add('hidden');
+                
+                // Initialize user info
+                initUserInfo();
+            }, 1000);
+        });
+        
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                // Page became visible, refresh data if needed
+                console.log('Page became visible');
+            }
+        });
+        
+        // Handle orientation changes on mobile
+        window.addEventListener('orientationchange', function() {
+            setTimeout(() => {
+                // Trigger map resize if needed
+                const mapContainer = document.querySelector('map-container');
+                if (mapContainer && mapContainer.map) {
+                    mapContainer.map.invalidateSize();
+                }
+            }, 100);
+        });
+        
+        // Prevent zoom on double tap (iOS Safari)
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+        
+        // Add to home screen prompt (PWA)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button or banner
+            console.log('App can be installed');
+        });
+        
+        // Error handling
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+            
+            // Show user-friendly error message
+            if (window.ToastMsg) {
+                ToastMsg.error('发生了意外错误，请刷新页面重试');
+            }
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('Unhandled promise rejection:', e.reason);
+            
+            // Show user-friendly error message
+            if (window.ToastMsg) {
+                ToastMsg.warning('网络请求失败，请检查网络连接');
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员控制台 - XMUM Hungry</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/variables.css">
+    <script src="js/components/toast-msg.js"></script>
+    <style>
+        body {
+            background: var(--bg-secondary, #f8f9fa);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .admin-header {
+            background: linear-gradient(135deg, var(--xmum-blue), var(--xmum-red));
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .admin-sidebar {
+            background: white;
+            min-height: calc(100vh - 80px);
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            padding: 0;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .sidebar-nav li {
+            border-bottom: 1px solid var(--border-color, #dee2e6);
+        }
+        
+        .sidebar-nav a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--text-primary, #212529);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: var(--xmum-blue, #0066cc);
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .main-content {
+            padding: 2rem;
+        }
+        
+        .content-section {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+        }
+        
+        .stats-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 0;
+            line-height: 1;
+        }
+        
+        .stats-label {
+            font-size: 1rem;
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+        }
+        
+        .data-table {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        
+        .table-header {
+            background: var(--xmum-blue, #0066cc);
+            color: white;
+            padding: 1rem 1.5rem;
+        }
+        
+        .table-header h5 {
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .search-bar {
+            border-radius: 25px;
+            padding: 0.75rem 1.5rem;
+            border: 2px solid var(--border-color, #dee2e6);
+            transition: all 0.2s ease;
+        }
+        
+        .search-bar:focus {
+            border-color: var(--xmum-blue, #0066cc);
+            box-shadow: 0 0 0 0.2rem rgba(0, 102, 204, 0.25);
+        }
+        
+        .table-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn-action {
+            padding: 0.25rem 0.75rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-edit {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #218838;
+        }
+        
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        
+        .loading-spinner {
+            width: 2rem;
+            height: 2rem;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--xmum-blue, #0066cc);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Header -->
+    <div class="admin-header">
+        <div class="container-fluid">
+            <div class="row align-items-center">
+                <div class="col">
+                    <h1 class="h3 mb-0">🛠️ XMUM Hungry 管理员控制台</h1>
+                </div>
+                <div class="col-auto">
+                    <div class="d-flex align-items-center gap-3">
+                        <span id="adminInfo">加载中...</span>
+                        <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                            退出登录
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 admin-sidebar">
+                <ul class="sidebar-nav">
+                    <li>
+                        <a href="#dashboard" class="nav-link active" onclick="showSection('dashboard')">
+                            📊 仪表板
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#users" class="nav-link" onclick="showSection('users')">
+                            👥 用户管理
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#restaurants" class="nav-link" onclick="showSection('restaurants')">
+                            🏪 餐厅管理
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#dishes" class="nav-link" onclick="showSection('dishes')">
+                            🍽️ 菜品管理
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#reviews" class="nav-link" onclick="showSection('reviews')">
+                            ⭐ 评价管理
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#map-editor" class="nav-link" onclick="showSection('map-editor')">
+                            🗺️ 地图编辑
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10">
+                <div class="main-content">
+                    <!-- Dashboard Section -->
+                    <div id="dashboard-section" class="content-section">
+                        <h2>📊 系统概览</h2>
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="stats-card">
+                                    <p class="stats-number" id="totalUsers">-</p>
+                                    <p class="stats-label">总用户数</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stats-card">
+                                    <p class="stats-number" id="totalRestaurants">-</p>
+                                    <p class="stats-label">餐厅数量</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stats-card">
+                                    <p class="stats-number" id="totalDishes">-</p>
+                                    <p class="stats-label">菜品数量</p>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stats-card">
+                                    <p class="stats-number" id="totalReviews">-</p>
+                                    <p class="stats-label">评价数量</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="data-table">
+                                    <div class="table-header">
+                                        <h5>最近活动</h5>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>时间</th>
+                                                    <th>用户</th>
+                                                    <th>操作</th>
+                                                    <th>详情</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="recentActivities">
+                                                <tr>
+                                                    <td colspan="4" class="text-center py-4">
+                                                        <div class="loading-spinner"></div>
+                                                        加载中...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Users Section -->
+                    <div id="users-section" class="content-section" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2>👥 用户管理</h2>
+                            <button class="btn btn-primary" onclick="showAddUserModal()">
+                                ➕ 添加用户
+                            </button>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <input type="text" class="form-control search-bar" placeholder="搜索用户..." 
+                                   id="userSearch" onkeyup="searchUsers()">
+                        </div>
+                        
+                        <div class="data-table">
+                            <div class="table-header">
+                                <h5>用户列表</h5>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>邮箱</th>
+                                            <th>注册时间</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTable">
+                                        <tr>
+                                            <td colspan="4" class="text-center py-4">
+                                                <div class="loading-spinner"></div>
+                                                加载中...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Restaurants Section -->
+                    <div id="restaurants-section" class="content-section" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2>🏪 餐厅管理</h2>
+                            <button class="btn btn-primary" onclick="showAddRestaurantModal()">
+                                ➕ 添加餐厅
+                            </button>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <input type="text" class="form-control search-bar" placeholder="搜索餐厅..." 
+                                   id="restaurantSearch" onkeyup="searchRestaurants()">
+                        </div>
+                        
+                        <div class="data-table">
+                            <div class="table-header">
+                                <h5>餐厅列表</h5>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>名称</th>
+                                            <th>菜系</th>
+                                            <th>平均价格</th>
+                                            <th>地址</th>
+                                            <th>操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="restaurantsTable">
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4">
+                                                <div class="loading-spinner"></div>
+                                                加载中...
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Other sections -->
+                    <div id="dishes-section" class="content-section" style="display: none;">
+                        <h2>🍽️ 菜品管理</h2>
+                        <p>菜品管理功能开发中...</p>
+                    </div>
+
+                    <div id="reviews-section" class="content-section" style="display: none;">
+                        <h2>⭐ 评价管理</h2>
+                        <p>评价管理功能开发中...</p>
+                    </div>
+
+                    <div id="map-editor-section" class="content-section" style="display: none;">
+                        <h2>🗺️ 地图编辑</h2>
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <div class="data-table">
+                                    <div class="table-header">
+                                        <h5>餐厅位置编辑</h5>
+                                    </div>
+                                    <div id="mapEditor" style="height: 500px; width: 100%;"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="data-table">
+                                    <div class="table-header">
+                                        <h5>操作说明</h5>
+                                    </div>
+                                    <div class="p-3">
+                                        <div class="mb-3">
+                                            <h6>🎯 如何使用：</h6>
+                                            <ul class="list-unstyled">
+                                                <li>• 拖拽餐厅标记来更改位置</li>
+                                                <li>• 点击地图空白处添加新餐厅</li>
+                                                <li>• 点击餐厅标记查看详情</li>
+                                                <li>• 位置更改会自动保存</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <h6>📍 当前选中：</h6>
+                                            <div id="selectedRestaurant" class="p-2 bg-light rounded">
+                                                <small class="text-muted">请选择一个餐厅</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <button class="btn btn-primary btn-sm w-100" onclick="centerMap()">
+                                                🎯 回到校园中心
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <button class="btn btn-success btn-sm w-100" onclick="addRestaurantMode()">
+                                                ➕ 添加餐厅模式
+                                            </button>
+                                        </div>
+                                        
+                                        <div id="addModeInfo" class="alert alert-info" style="display: none;">
+                                            <small>
+                                                <strong>添加模式已激活</strong><br>
+                                                点击地图上的任意位置来添加新餐厅
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="data-table mt-3">
+                                    <div class="table-header">
+                                        <h5>餐厅列表</h5>
+                                    </div>
+                                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                                        <table class="table table-sm mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th>名称</th>
+                                                    <th>操作</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="mapRestaurantsList">
+                                                <tr>
+                                                    <td colspan="2" class="text-center py-3">
+                                                        <div class="loading-spinner"></div>
+                                                        加载中...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加新用户</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addUserForm">
+                        <div class="mb-3">
+                            <label for="userEmail" class="form-label">邮箱地址 *</label>
+                            <input type="email" class="form-control" id="userEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userPassword" class="form-label">密码 *</label>
+                            <input type="password" class="form-control" id="userPassword" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="addUser()">添加用户</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑用户</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editUserForm">
+                        <input type="hidden" id="editUserId">
+                        <div class="mb-3">
+                            <label for="editUserEmail" class="form-label">邮箱地址 *</label>
+                            <input type="email" class="form-control" id="editUserEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editUserPassword" class="form-label">新密码 (留空保持不变)</label>
+                            <input type="password" class="form-control" id="editUserPassword">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="updateUser()">更新用户</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Restaurant Modal -->
+    <div class="modal fade" id="addRestaurantModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加新餐厅</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addRestaurantForm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="restName" class="form-label">餐厅名称 *</label>
+                                    <input type="text" class="form-control" id="restName" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="restCuisines" class="form-label">菜系类型 *</label>
+                                    <input type="text" class="form-control" id="restCuisines" placeholder="例如：中式,马来菜" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="restDescription" class="form-label">餐厅描述 *</label>
+                            <textarea class="form-control" id="restDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="restAvgPrice" class="form-label">平均价格 (RM) *</label>
+                                    <input type="number" class="form-control" id="restAvgPrice" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="restLatitude" class="form-label">纬度 *</label>
+                                    <input type="number" class="form-control" id="restLatitude" step="0.000001" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="restLongitude" class="form-label">经度 *</label>
+                                    <input type="number" class="form-control" id="restLongitude" step="0.000001" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="restAddress" class="form-label">地址</label>
+                            <input type="text" class="form-control" id="restAddress">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="restPhone" class="form-label">电话</label>
+                                    <input type="text" class="form-control" id="restPhone">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="restHours" class="form-label">营业时间</label>
+                                    <input type="text" class="form-control" id="restHours" placeholder="例如：9:00-22:00">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="restImage" class="form-label">餐厅图片</label>
+                                    <input type="file" class="form-control" id="restImage" accept="image/*">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="restVideo" class="form-label">餐厅视频</label>
+                                    <input type="file" class="form-control" id="restVideo" accept="video/*">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="addRestaurant()">添加餐厅</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Restaurant Modal -->
+    <div class="modal fade" id="editRestaurantModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑餐厅</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editRestaurantForm">
+                        <input type="hidden" id="editRestId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editRestName" class="form-label">餐厅名称 *</label>
+                                    <input type="text" class="form-control" id="editRestName" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editRestCuisines" class="form-label">菜系类型 *</label>
+                                    <input type="text" class="form-control" id="editRestCuisines" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editRestDescription" class="form-label">餐厅描述 *</label>
+                            <textarea class="form-control" id="editRestDescription" rows="3" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editRestAvgPrice" class="form-label">平均价格 (RM) *</label>
+                                    <input type="number" class="form-control" id="editRestAvgPrice" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editRestLatitude" class="form-label">纬度 *</label>
+                                    <input type="number" class="form-control" id="editRestLatitude" step="0.000001" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="editRestLongitude" class="form-label">经度 *</label>
+                                    <input type="number" class="form-control" id="editRestLongitude" step="0.000001" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editRestAddress" class="form-label">地址</label>
+                            <input type="text" class="form-control" id="editRestAddress">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editRestPhone" class="form-label">电话</label>
+                                    <input type="text" class="form-control" id="editRestPhone">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editRestHours" class="form-label">营业时间</label>
+                                    <input type="text" class="form-control" id="editRestHours">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editRestImage" class="form-label">餐厅图片 (留空保持不变)</label>
+                                    <input type="file" class="form-control" id="editRestImage" accept="image/*">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="editRestVideo" class="form-label">餐厅视频 (留空保持不变)</label>
+                                    <input type="file" class="form-control" id="editRestVideo" accept="video/*">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="updateRestaurant()">更新餐厅</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Messages -->
+    <toast-msg></toast-msg>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        let currentSection = 'dashboard';
+        let users = [];
+        let filteredUsers = [];
+        let restaurants = [];
+        let filteredRestaurants = [];
+        
+        // Map editor variables
+        let mapEditor = null;
+        let mapMarkers = {};
+        let isAddMode = false;
+        let selectedRestaurant = null;
+
+        // Initialize admin panel
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAdminAuth();
+            loadDashboardData();
+        });
+
+        async function checkAdminAuth() {
+            try {
+                const response = await fetch('/api/api.php?action=checkAuth');
+                const result = await response.json();
+                
+                if (!result.ok || !result.data || !result.data.isAdmin) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+                
+                document.getElementById('adminInfo').textContent = `管理员: ${result.data.email}`;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch('/api/api.php?action=logout', { method: 'POST' });
+                window.location.href = '/login.html';
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName + '-section').style.display = 'block';
+            
+            // Add active class to selected nav link
+            document.querySelector(`[onclick="showSection('${sectionName}')"]`).classList.add('active');
+            
+            currentSection = sectionName;
+            
+            // Load section data
+            if (sectionName === 'users') {
+                loadUsers();
+            } else if (sectionName === 'restaurants') {
+                loadRestaurants();
+            } else if (sectionName === 'dashboard') {
+                loadDashboardData();
+            } else if (sectionName === 'map-editor') {
+                loadMapEditor();
+            }
+        }
+
+        async function loadDashboardData() {
+            try {
+                const response = await fetch('/api/api.php?action=getAdminStats');
+                const result = await response.json();
+                
+                if (result.ok) {
+                    document.getElementById('totalUsers').textContent = result.data.stats.users || 0;
+                    document.getElementById('totalRestaurants').textContent = result.data.stats.restaurants || 0;
+                    document.getElementById('totalDishes').textContent = result.data.stats.dishes || 0;
+                    document.getElementById('totalReviews').textContent = result.data.stats.reviews || 0;
+                    
+                    // Load recent activities
+                    loadRecentActivities();
+                }
+            } catch (error) {
+                console.error('Failed to load dashboard data:', error);
+            }
+        }
+
+        async function loadRecentActivities() {
+            try {
+                const response = await fetch('/api/api.php?action=getRecentActivities');
+                const result = await response.json();
+                
+                const tbody = document.getElementById('recentActivities');
+                
+                if (result.ok && result.data.activities.length > 0) {
+                    tbody.innerHTML = result.data.activities.map(activity => `
+                        <tr>
+                            <td>${new Date(activity.timestamp).toLocaleString('zh-CN')}</td>
+                            <td>${activity.user_email}</td>
+                            <td>${activity.action}</td>
+                            <td>${activity.details}</td>
+                        </tr>
+                    `).join('');
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="text-center py-4">
+                                <div class="empty-state">
+                                    <div class="empty-state-icon">📝</div>
+                                    <p>暂无活动记录</p>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            } catch (error) {
+                console.error('Failed to load recent activities:', error);
+                document.getElementById('recentActivities').innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-danger">
+                            加载失败，请刷新页面重试
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/api.php?action=getAllUsers');
+                const result = await response.json();
+                
+                if (result.ok) {
+                    users = result.data.users;
+                    filteredUsers = users;
+                    renderUsersTable();
+                } else {
+                    throw new Error(result.error || '加载用户失败');
+                }
+            } catch (error) {
+                console.error('Failed to load users:', error);
+                ToastMsg.error('加载用户列表失败: ' + error.message);
+                
+                document.getElementById('usersTable').innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-danger">
+                            加载失败，请刷新页面重试
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('usersTable');
+            
+            if (filteredUsers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-4">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">👥</div>
+                                <p>暂无用户数据</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = filteredUsers.map(user => `
+                <tr>
+                    <td>${user.id}</td>
+                    <td>${user.email}</td>
+                    <td>${new Date(user.created_at).toLocaleString('zh-CN')}</td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="btn-action btn-edit" onclick="showEditUserModal(${user.id})">
+                                编辑
+                            </button>
+                            <button class="btn-action btn-delete" onclick="deleteUser(${user.id})">
+                                删除
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function searchUsers() {
+            const searchTerm = document.getElementById('userSearch').value.toLowerCase();
+            filteredUsers = users.filter(user => 
+                user.email.toLowerCase().includes(searchTerm)
+            );
+            renderUsersTable();
+        }
+
+        function showAddUserModal() {
+            document.getElementById('addUserForm').reset();
+            new bootstrap.Modal(document.getElementById('addUserModal')).show();
+        }
+
+        function showEditUserModal(userId) {
+            const user = users.find(u => u.id === userId);
+            if (!user) return;
+            
+            document.getElementById('editUserId').value = user.id;
+            document.getElementById('editUserEmail').value = user.email;
+            document.getElementById('editUserPassword').value = '';
+            
+            new bootstrap.Modal(document.getElementById('editUserModal')).show();
+        }
+
+        async function addUser() {
+            const email = document.getElementById('userEmail').value.trim();
+            const password = document.getElementById('userPassword').value;
+            
+            if (!email || !password) {
+                ToastMsg.warning('请填写所有必填字段');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('email', email);
+                formData.append('password', password);
+                
+                const response = await fetch('/api/api.php?action=addUser', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    ToastMsg.success('用户添加成功');
+                    bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+                    loadUsers(); // Reload users list
+                } else {
+                    throw new Error(result.error || '添加用户失败');
+                }
+            } catch (error) {
+                console.error('Add user failed:', error);
+                ToastMsg.error('添加用户失败: ' + error.message);
+            }
+        }
+
+        async function updateUser() {
+            const userId = document.getElementById('editUserId').value;
+            const email = document.getElementById('editUserEmail').value.trim();
+            const password = document.getElementById('editUserPassword').value;
+            
+            if (!email) {
+                ToastMsg.warning('邮箱不能为空');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('userId', userId);
+                formData.append('email', email);
+                if (password) {
+                    formData.append('password', password);
+                }
+                
+                const response = await fetch('/api/api.php?action=updateUser', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    ToastMsg.success('用户更新成功');
+                    bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+                    loadUsers(); // Reload users list
+                } else {
+                    throw new Error(result.error || '更新用户失败');
+                }
+            } catch (error) {
+                console.error('Update user failed:', error);
+                ToastMsg.error('更新用户失败: ' + error.message);
+            }
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('确定要删除这个用户吗？此操作不可撤销。')) {
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('userId', userId);
+                
+                const response = await fetch('/api/api.php?action=deleteUser', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    ToastMsg.success('用户删除成功');
+                    loadUsers(); // Reload users list
+                } else {
+                    throw new Error(result.error || '删除用户失败');
+                }
+            } catch (error) {
+                console.error('Delete user failed:', error);
+                ToastMsg.error('删除用户失败: ' + error.message);
+            }
+        }
+
+        // Restaurant management functions
+        async function loadRestaurants() {
+            try {
+                const response = await fetch('/api/api.php?action=admin_getRestaurants');
+                const result = await response.json();
+                
+                if (result.ok) {
+                    restaurants = result.data.restaurants;
+                    filteredRestaurants = restaurants;
+                    renderRestaurantsTable();
+                } else {
+                    throw new Error(result.error || '加载餐厅失败');
+                }
+            } catch (error) {
+                console.error('Failed to load restaurants:', error);
+                ToastMsg.error('加载餐厅列表失败: ' + error.message);
+                
+                document.getElementById('restaurantsTable').innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-danger">
+                            加载失败，请刷新页面重试
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function renderRestaurantsTable() {
+            const tbody = document.getElementById('restaurantsTable');
+            
+            if (filteredRestaurants.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🏪</div>
+                                <p>暂无餐厅数据</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = filteredRestaurants.map(restaurant => `
+                <tr>
+                    <td>${restaurant.id}</td>
+                    <td>${restaurant.name}</td>
+                    <td>${restaurant.cuisines}</td>
+                    <td>RM ${restaurant.avg_price}</td>
+                    <td>${restaurant.address || '未设置'}</td>
+                    <td>
+                        <div class="table-actions">
+                            <button class="btn-action btn-edit" onclick="showEditRestaurantModal(${restaurant.id})">
+                                编辑
+                            </button>
+                            <button class="btn-action btn-delete" onclick="deleteRestaurant(${restaurant.id})">
+                                删除
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function searchRestaurants() {
+            const searchTerm = document.getElementById('restaurantSearch').value.toLowerCase();
+            filteredRestaurants = restaurants.filter(restaurant => 
+                restaurant.name.toLowerCase().includes(searchTerm) ||
+                restaurant.cuisines.toLowerCase().includes(searchTerm) ||
+                (restaurant.address && restaurant.address.toLowerCase().includes(searchTerm))
+            );
+            renderRestaurantsTable();
+        }
+
+        function showAddRestaurantModal() {
+            document.getElementById('addRestaurantForm').reset();
+            new bootstrap.Modal(document.getElementById('addRestaurantModal')).show();
+        }
+
+        function showEditRestaurantModal(restaurantId) {
+            const restaurant = restaurants.find(r => r.id === restaurantId);
+            if (!restaurant) return;
+            
+            document.getElementById('editRestId').value = restaurant.id;
+            document.getElementById('editRestName').value = restaurant.name;
+            document.getElementById('editRestCuisines').value = restaurant.cuisines;
+            document.getElementById('editRestDescription').value = restaurant.description;
+            document.getElementById('editRestAvgPrice').value = restaurant.avg_price;
+            document.getElementById('editRestLatitude').value = restaurant.lat;
+            document.getElementById('editRestLongitude').value = restaurant.lng;
+            document.getElementById('editRestAddress').value = restaurant.address || '';
+            document.getElementById('editRestPhone').value = restaurant.phone || '';
+            document.getElementById('editRestHours').value = restaurant.hours || '';
+            
+            new bootstrap.Modal(document.getElementById('editRestaurantModal')).show();
+        }
+
+        async function addRestaurant() {
+            const name = document.getElementById('restName').value.trim();
+            const description = document.getElementById('restDescription').value.trim();
+            const cuisines = document.getElementById('restCuisines').value.trim();
+            const avgPrice = document.getElementById('restAvgPrice').value;
+            const latitude = document.getElementById('restLatitude').value;
+            const longitude = document.getElementById('restLongitude').value;
+            const address = document.getElementById('restAddress').value.trim();
+            const phone = document.getElementById('restPhone').value.trim();
+            const hours = document.getElementById('restHours').value.trim();
+            const imageFile = document.getElementById('restImage').files[0];
+            const videoFile = document.getElementById('restVideo').files[0];
+            
+            if (!name || !description || !cuisines || !avgPrice || !latitude || !longitude) {
+                ToastMsg.warning('请填写所有必填字段');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('name', name);
+                formData.append('description', description);
+                formData.append('cuisines', cuisines);
+                formData.append('avgPrice', avgPrice);
+                formData.append('latitude', latitude);
+                formData.append('longitude', longitude);
+                formData.append('address', address);
+                formData.append('phone', phone);
+                formData.append('hours', hours);
+                
+                if (imageFile) {
+                    formData.append('image', imageFile);
+                }
+                
+                if (videoFile) {
+                    formData.append('video', videoFile);
+                }
+                
+                const response = await fetch('/api/api.php?action=admin_addRestaurant', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    ToastMsg.success('餐厅添加成功');
+                    bootstrap.Modal.getInstance(document.getElementById('addRestaurantModal')).hide();
+                    loadRestaurants(); // Reload restaurants list
+                } else {
+                    throw new Error(result.error || '添加餐厅失败');
+                }
+            } catch (error) {
+                console.error('Add restaurant failed:', error);
+                ToastMsg.error('添加餐厅失败: ' + error.message);
+            }
+        }
+
+        async function updateRestaurant() {
+            const id = document.getElementById('editRestId').value;
+            const name = document.getElementById('editRestName').value.trim();
+            const description = document.getElementById('editRestDescription').value.trim();
+            const cuisines = document.getElementById('editRestCuisines').value.trim();
+            const avgPrice = document.getElementById('editRestAvgPrice').value;
+            const latitude = document.getElementById('editRestLatitude').value;
+            const longitude = document.getElementById('editRestLongitude').value;
+            const address = document.getElementById('editRestAddress').value.trim();
+            const phone = document.getElementById('editRestPhone').value.trim();
+            const hours = document.getElementById('editRestHours').value.trim();
+            const imageFile = document.getElementById('editRestImage').files[0];
+            const videoFile = document.getElementById('editRestVideo').files[0];
+            
+            if (!name || !description || !cuisines || !avgPrice || !latitude || !longitude) {
+                ToastMsg.warning('请填写所有必填字段');
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('id', id);
+                formData.append('name', name);
+                formData.append('description', description);
+                formData.append('cuisines', cuisines);
+                formData.append('avgPrice', avgPrice);
+                formData.append('latitude', latitude);
+                formData.append('longitude', longitude);
+                formData.append('address', address);
+                formData.append('phone', phone);
+                formData.append('hours', hours);
+                
+                if (imageFile) {
+                    formData.append('image', imageFile);
+                }
+                
+                if (videoFile) {
+                    formData.append('video', videoFile);
+                }
+                
+                const response = await fetch('/api/api.php?action=admin_updateRestaurant', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    ToastMsg.success('餐厅更新成功');
+                    bootstrap.Modal.getInstance(document.getElementById('editRestaurantModal')).hide();
+                    loadRestaurants(); // Reload restaurants list
+                } else {
+                    throw new Error(result.error || '更新餐厅失败');
+                }
+            } catch (error) {
+                console.error('Update restaurant failed:', error);
+                ToastMsg.error('更新餐厅失败: ' + error.message);
+            }
+        }
+
+        async function deleteRestaurant(restaurantId) {
+            if (!confirm('确定要删除这个餐厅吗？此操作将同时删除相关的菜品和评价，且不可撤销。')) {
+                return;
+            }
+            
+            try {
+                const formData = new FormData();
+                formData.append('id', restaurantId);
+                
+                const response = await fetch('/api/api.php?action=admin_deleteRestaurant', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    ToastMsg.success('餐厅删除成功');
+                    loadRestaurants(); // Reload restaurants list
+                } else {
+                    throw new Error(result.error || '删除餐厅失败');
+                }
+            } catch (error) {
+                console.error('Delete restaurant failed:', error);
+                ToastMsg.error('删除餐厅失败: ' + error.message);
+            }
+        }
+        
+        // Map editor functions
+        async function loadMapEditor() {
+            if (!mapEditor) {
+                initializeMap();
+            }
+            
+            // Load restaurants for map
+            try {
+                const response = await fetch('/api/api.php?action=admin_getRestaurants');
+                const result = await response.json();
+                
+                if (result.ok) {
+                    restaurants = result.data.restaurants;
+                    updateMapMarkers();
+                    updateMapRestaurantsList();
+                } else {
+                    throw new Error(result.error || '加载餐厅失败');
+                }
+            } catch (error) {
+                console.error('Failed to load restaurants for map:', error);
+                ToastMsg.error('加载餐厅数据失败: ' + error.message);
+            }
+        }
+        
+        function initializeMap() {
+            // XMUM coordinates (approximate)
+            const xmumCenter = [2.832889, 101.702889];
+            
+            mapEditor = L.map('mapEditor').setView(xmumCenter, 16);
+            
+            // Add tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(mapEditor);
+            
+            // Add click handler for adding restaurants
+            mapEditor.on('click', function(e) {
+                if (isAddMode) {
+                    showAddRestaurantAtLocation(e.latlng);
+                }
+            });
+        }
+        
+        function updateMapMarkers() {
+            // Clear existing markers
+            Object.values(mapMarkers).forEach(marker => {
+                mapEditor.removeLayer(marker);
+            });
+            mapMarkers = {};
+            
+            // Add markers for each restaurant
+            restaurants.forEach(restaurant => {
+                if (restaurant.lat && restaurant.lng) {
+                    const marker = L.marker([restaurant.lat, restaurant.lng], {
+                        draggable: true
+                    }).addTo(mapEditor);
+                    
+                    marker.bindPopup(`
+                        <div>
+                            <h6>${restaurant.name}</h6>
+                            <p><small>${restaurant.cuisines}</small></p>
+                            <p><small>RM ${restaurant.avg_price}</small></p>
+                        </div>
+                    `);
+                    
+                    // Handle marker drag
+                    marker.on('dragend', function(e) {
+                        const newPos = e.target.getLatLng();
+                        updateRestaurantLocation(restaurant.id, newPos.lat, newPos.lng);
+                    });
+                    
+                    // Handle marker click
+                    marker.on('click', function(e) {
+                        selectRestaurant(restaurant);
+                    });
+                    
+                    mapMarkers[restaurant.id] = marker;
+                }
+            });
+        }
+        
+        function updateMapRestaurantsList() {
+            const tbody = document.getElementById('mapRestaurantsList');
+            
+            if (restaurants.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="2" class="text-center py-3">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🏪</div>
+                                <p>暂无餐厅数据</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = restaurants.map(restaurant => `
+                <tr>
+                    <td>
+                        <small>
+                            <strong>${restaurant.name}</strong><br>
+                            <span class="text-muted">${restaurant.cuisines}</span>
+                        </small>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="focusRestaurant(${restaurant.id})">
+                            定位
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function selectRestaurant(restaurant) {
+            selectedRestaurant = restaurant;
+            document.getElementById('selectedRestaurant').innerHTML = `
+                <strong>${restaurant.name}</strong><br>
+                <small class="text-muted">${restaurant.cuisines}</small><br>
+                <small>坐标: ${restaurant.lat}, ${restaurant.lng}</small>
+            `;
+        }
+        
+        function focusRestaurant(restaurantId) {
+            const restaurant = restaurants.find(r => r.id === restaurantId);
+            if (restaurant && restaurant.lat && restaurant.lng) {
+                mapEditor.setView([restaurant.lat, restaurant.lng], 18);
+                
+                // Open popup
+                if (mapMarkers[restaurantId]) {
+                    mapMarkers[restaurantId].openPopup();
+                }
+                
+                selectRestaurant(restaurant);
+            }
+        }
+        
+        function centerMap() {
+            const xmumCenter = [2.832889, 101.702889];
+            mapEditor.setView(xmumCenter, 16);
+        }
+        
+        function addRestaurantMode() {
+            isAddMode = !isAddMode;
+            const button = document.querySelector('[onclick="addRestaurantMode()"]');
+            const info = document.getElementById('addModeInfo');
+            
+            if (isAddMode) {
+                button.textContent = '❌ 取消添加模式';
+                button.className = 'btn btn-warning btn-sm w-100';
+                info.style.display = 'block';
+                mapEditor.getContainer().style.cursor = 'crosshair';
+            } else {
+                button.textContent = '➕ 添加餐厅模式';
+                button.className = 'btn btn-success btn-sm w-100';
+                info.style.display = 'none';
+                mapEditor.getContainer().style.cursor = '';
+            }
+        }
+        
+        function showAddRestaurantAtLocation(latlng) {
+            // Pre-fill coordinates in add restaurant modal
+            document.getElementById('restLatitude').value = latlng.lat.toFixed(6);
+            document.getElementById('restLongitude').value = latlng.lng.toFixed(6);
+            
+            // Switch to restaurants section and show modal
+            showSection('restaurants');
+            setTimeout(() => {
+                showAddRestaurantModal();
+            }, 100);
+            
+            // Exit add mode
+            addRestaurantMode();
+        }
+        
+        async function updateRestaurantLocation(restaurantId, lat, lng) {
+            try {
+                const formData = new FormData();
+                formData.append('id', restaurantId);
+                formData.append('latitude', lat);
+                formData.append('longitude', lng);
+                
+                const response = await fetch('/api/api.php?action=admin_updateRestaurantLocation', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.ok) {
+                    ToastMsg.success('餐厅位置更新成功');
+                    
+                    // Update local data
+                    const restaurant = restaurants.find(r => r.id === restaurantId);
+                    if (restaurant) {
+                        restaurant.lat = lat;
+                        restaurant.lng = lng;
+                        selectRestaurant(restaurant);
+                    }
+                } else {
+                    throw new Error(result.error || '更新位置失败');
+                }
+            } catch (error) {
+                console.error('Update location failed:', error);
+                ToastMsg.error('更新餐厅位置失败: ' + error.message);
+                
+                // Revert marker position
+                loadMapEditor();
+            }
+        }
+    </script>
+</body>
+</html>
+
